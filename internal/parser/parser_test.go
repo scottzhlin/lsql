@@ -90,6 +90,18 @@ func TestParser_LogicalExpr(t *testing.T) {
 	if stmt.Where == nil {
 		t.Fatal("expected WHERE clause")
 	}
+	// OR has lower precedence: root should be OR(AND(...), LIKE(...))
+	orExpr, ok := stmt.Where.(parser.LogicalExpr)
+	if !ok || orExpr.Op != "OR" {
+		t.Fatalf("expected root LogicalExpr{Op:OR}, got %T", stmt.Where)
+	}
+	andExpr, ok := orExpr.Left.(parser.LogicalExpr)
+	if !ok || andExpr.Op != "AND" {
+		t.Fatalf("expected left subtree LogicalExpr{Op:AND}, got %T", orExpr.Left)
+	}
+	if _, ok := orExpr.Right.(parser.LikeExpr); !ok {
+		t.Fatalf("expected right subtree LikeExpr, got %T", orExpr.Right)
+	}
 }
 
 func TestParser_NotExpr(t *testing.T) {
@@ -102,9 +114,18 @@ func TestParser_NotExpr(t *testing.T) {
 
 func TestParser_BetweenExpr(t *testing.T) {
 	stmt := parse(t, "SELECT name FROM . WHERE size BETWEEN 100 AND 1000")
-	_, ok := stmt.Where.(parser.BetweenExpr)
+	be, ok := stmt.Where.(parser.BetweenExpr)
 	if !ok {
 		t.Fatalf("expected BetweenExpr, got %T", stmt.Where)
+	}
+	if be.Col != "size" {
+		t.Errorf("Col: got %q, want %q", be.Col, "size")
+	}
+	if be.Low != int64(100) {
+		t.Errorf("Low: got %v (%T), want int64(100)", be.Low, be.Low)
+	}
+	if be.High != int64(1000) {
+		t.Errorf("High: got %v (%T), want int64(1000)", be.High, be.High)
 	}
 }
 

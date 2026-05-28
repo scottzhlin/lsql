@@ -21,6 +21,7 @@ func New(tokens []lexer.Token) *Parser {
 
 func (p *Parser) Parse() (*SelectStmt, error) {
 	stmt := &SelectStmt{Limit: -1}
+	var seenWhere, seenGroup, seenOrder, seenLimit bool
 
 	if err := p.expectType(lexer.TOKEN_SELECT, "SELECT"); err != nil {
 		return nil, err
@@ -48,6 +49,10 @@ func (p *Parser) Parse() (*SelectStmt, error) {
 	for p.peek().Type != lexer.TOKEN_EOF {
 		switch p.peek().Type {
 		case lexer.TOKEN_WHERE:
+			if seenWhere {
+				return nil, fmt.Errorf("parse error: duplicate WHERE clause")
+			}
+			seenWhere = true
 			p.advance()
 			expr, err := p.parseExpr()
 			if err != nil {
@@ -55,6 +60,10 @@ func (p *Parser) Parse() (*SelectStmt, error) {
 			}
 			stmt.Where = expr
 		case lexer.TOKEN_GROUP:
+			if seenGroup {
+				return nil, fmt.Errorf("parse error: duplicate GROUP BY clause")
+			}
+			seenGroup = true
 			p.advance()
 			if err := p.expectType(lexer.TOKEN_BY, "BY"); err != nil {
 				return nil, err
@@ -65,6 +74,10 @@ func (p *Parser) Parse() (*SelectStmt, error) {
 			}
 			stmt.GroupBy = groups
 		case lexer.TOKEN_ORDER:
+			if seenOrder {
+				return nil, fmt.Errorf("parse error: duplicate ORDER BY clause")
+			}
+			seenOrder = true
 			p.advance()
 			if err := p.expectType(lexer.TOKEN_BY, "BY"); err != nil {
 				return nil, err
@@ -75,13 +88,20 @@ func (p *Parser) Parse() (*SelectStmt, error) {
 			}
 			stmt.OrderBy = order
 		case lexer.TOKEN_LIMIT:
+			if seenLimit {
+				return nil, fmt.Errorf("parse error: duplicate LIMIT clause")
+			}
+			seenLimit = true
 			p.advance()
 			tok := p.advance()
 			if tok.Type != lexer.TOKEN_NUMBER {
 				return nil, fmt.Errorf("parse error: expected number after LIMIT, got %q", tok.Literal)
 			}
-			n, _ := strconv.Atoi(tok.Literal)
-			stmt.Limit = n
+			n, err := strconv.ParseInt(tok.Literal, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("parse error: LIMIT value must be an integer, got %q", tok.Literal)
+			}
+			stmt.Limit = int(n)
 		default:
 			return nil, fmt.Errorf("parse error: unexpected token %q", p.peek().Literal)
 		}
