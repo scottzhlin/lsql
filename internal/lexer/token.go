@@ -41,7 +41,6 @@ const (
 	TOKEN_COMMA  // ,
 
 	TOKEN_EOF
-	TOKEN_ILLEGAL
 )
 
 type Token struct {

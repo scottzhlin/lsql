@@ -65,7 +65,7 @@ func (l *Lexer) nextToken() (Token, error) {
 
 	switch {
 	case ch == '\'':
-		s, err := l.readString()
+		s, err := l.readString(col)
 		if err != nil {
 			return Token{}, err
 		}
@@ -90,6 +90,8 @@ func (l *Lexer) nextToken() (Token, error) {
 			l.pos += 2
 			return Token{Type: TOKEN_NEQ, Literal: "!=", Col: col}, nil
 		}
+		l.pos++
+		return Token{}, fmt.Errorf("lexer error at col %d: unexpected character '!'", col+1)
 
 	case ch == '<':
 		if l.pos+1 < len(l.input) && l.input[l.pos+1] == '=' {
@@ -134,7 +136,7 @@ func (l *Lexer) skipWhitespace() {
 	}
 }
 
-func (l *Lexer) readString() (string, error) {
+func (l *Lexer) readString(col int) (string, error) {
 	l.pos++ // skip opening '
 	var sb strings.Builder
 	for l.pos < len(l.input) {
@@ -145,7 +147,7 @@ func (l *Lexer) readString() (string, error) {
 		}
 		sb.WriteRune(ch)
 	}
-	return "", fmt.Errorf("lexer error: unterminated string literal")
+	return "", fmt.Errorf("lexer error at col %d: unterminated string literal", col+1)
 }
 
 func (l *Lexer) readNumber() string {
