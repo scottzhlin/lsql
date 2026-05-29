@@ -77,7 +77,10 @@ func aggregate(rows []FileRow, stmt *parser.SelectStmt) ([]ResultRow, error) {
 		order = []groupKey{""}
 	} else {
 		for _, row := range rows {
-			key := groupKeyFor(row, stmt.GroupBy)
+			key, err := groupKeyFor(row, stmt.GroupBy)
+			if err != nil {
+				return nil, err
+			}
 			if _, exists := groups[key]; !exists {
 				order = append(order, key)
 			}
@@ -96,12 +99,16 @@ func aggregate(rows []FileRow, stmt *parser.SelectStmt) ([]ResultRow, error) {
 	return result, nil
 }
 
-func groupKeyFor(row FileRow, groupBy []string) string {
+func groupKeyFor(row FileRow, groupBy []string) (string, error) {
 	parts := make([]string, len(groupBy))
 	for i, col := range groupBy {
-		parts[i] = fmt.Sprintf("%v", row.Get(col))
+		val := row.Get(col)
+		if val == nil {
+			return "", fmt.Errorf("unknown GROUP BY column %q", col)
+		}
+		parts[i] = fmt.Sprintf("%v", val)
 	}
-	return strings.Join(parts, "\x00")
+	return strings.Join(parts, "\x00"), nil
 }
 
 func computeAggregates(rows []FileRow, cols []parser.ColExpr) (ResultRow, error) {

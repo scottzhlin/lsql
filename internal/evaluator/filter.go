@@ -159,9 +159,18 @@ func evalLike(e parser.LikeExpr, row FileRow) (bool, error) {
 
 // likeToGlob converts SQL LIKE pattern to filepath.Match glob pattern.
 func likeToGlob(pattern string) string {
-	pattern = strings.ReplaceAll(pattern, `\*`, "\x00") // protect escaped *
+	// Protect SQL escape sequences first
+	pattern = strings.ReplaceAll(pattern, `\%`, "\x00") // escaped % literal
+	pattern = strings.ReplaceAll(pattern, `\_`, "\x01") // escaped _ literal
+	// Escape filepath.Match special chars that SQL LIKE doesn't use
+	pattern = strings.ReplaceAll(pattern, "[", `\[`)
+	pattern = strings.ReplaceAll(pattern, "]", `\]`)
+	// Translate SQL wildcards to glob wildcards
 	pattern = strings.ReplaceAll(pattern, "%", "*")
-	pattern = strings.ReplaceAll(pattern, "\x00", `\*`)
+	pattern = strings.ReplaceAll(pattern, "_", "?")
+	// Restore escaped literals
+	pattern = strings.ReplaceAll(pattern, "\x00", "%")
+	pattern = strings.ReplaceAll(pattern, "\x01", "_")
 	return pattern
 }
 
