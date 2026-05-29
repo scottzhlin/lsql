@@ -59,7 +59,7 @@ func evalExpr(expr parser.Expr, row FileRow) (bool, error) {
 func evalBinary(e parser.BinaryExpr, row FileRow) (bool, error) {
 	colVal := row.Get(e.Col)
 	if colVal == nil {
-		return false, fmt.Errorf("unknown column %q", e.Col)
+		return false, nil
 	}
 	return compare(colVal, e.Op, e.Val)
 }
@@ -150,6 +150,9 @@ func toInt64(v interface{}) (int64, error) {
 
 func evalLike(e parser.LikeExpr, row FileRow) (bool, error) {
 	colVal := row.Get(e.Col)
+	if colVal == nil {
+		return false, nil
+	}
 	s, ok := colVal.(string)
 	if !ok {
 		return false, fmt.Errorf("LIKE requires a string column, got %T for %q", colVal, e.Col)
@@ -176,6 +179,9 @@ func likeToGlob(pattern string) string {
 
 func evalBetween(e parser.BetweenExpr, row FileRow) (bool, error) {
 	colVal := row.Get(e.Col)
+	if colVal == nil {
+		return false, nil
+	}
 	low, err := compare(colVal, ">=", e.Low)
 	if err != nil {
 		return false, err
