@@ -3,9 +3,11 @@ package evaluator_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/scottlin/lsql/internal/evaluator"
+	"github.com/scottlin/lsql/internal/parser"
 )
 
 func TestScanner_Flat(t *testing.T) {
@@ -99,4 +101,76 @@ func writeFile(t *testing.T, path, content string) {
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatalf("writeFile: %v", err)
 	}
+}
+
+func TestFilter_BinaryExpr(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "small.go"), "hi")
+	writeFile(t, filepath.Join(dir, "big.go"), strings.Repeat("x", 1000))
+
+	rows, _ := evaluator.Scan(dir, false)
+	filtered, err := evaluator.ApplyFilter(rows, parser.BinaryExpr{Col: "size", Op: ">", Val: int64(100)})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(filtered) != 1 || filtered[0].Name != "big.go" {
+		t.Errorf("expected [big.go], got %v", names(filtered))
+	}
+}
+
+func TestFilter_LikeExpr(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "main.go"), "")
+	writeFile(t, filepath.Join(dir, "main.txt"), "")
+
+	rows, _ := evaluator.Scan(dir, false)
+	filtered, err := evaluator.ApplyFilter(rows, parser.LikeExpr{Col: "name", Pattern: "%.go"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(filtered) != 1 || filtered[0].Name != "main.go" {
+		t.Errorf("expected [main.go], got %v", names(filtered))
+	}
+}
+
+func TestFilter_LogicalAnd(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "a.go"), strings.Repeat("x", 500))
+	writeFile(t, filepath.Join(dir, "b.go"), strings.Repeat("x", 2000))
+	writeFile(t, filepath.Join(dir, "c.txt"), strings.Repeat("x", 2000))
+
+	rows, _ := evaluator.Scan(dir, false)
+	expr := parser.LogicalExpr{
+		Left:  parser.BinaryExpr{Col: "extension", Op: "=", Val: ".go"},
+		Op:    "AND",
+		Right: parser.BinaryExpr{Col: "size", Op: ">", Val: int64(1000)},
+	}
+	filtered, err := evaluator.ApplyFilter(rows, expr)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(filtered) != 1 || filtered[0].Name != "b.go" {
+		t.Errorf("expected [b.go], got %v", names(filtered))
+	}
+}
+
+func TestFilter_NilExpr(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "file.go"), "")
+	rows, _ := evaluator.Scan(dir, false)
+	filtered, err := evaluator.ApplyFilter(rows, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(filtered) != len(rows) {
+		t.Errorf("nil filter should return all rows")
+	}
+}
+
+func names(rows []evaluator.FileRow) []string {
+	ns := make([]string, len(rows))
+	for i, r := range rows {
+		ns[i] = r.Name
+	}
+	return ns
 }
