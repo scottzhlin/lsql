@@ -36,8 +36,10 @@ lsql "SELECT name, size FROM /path/to/dir WHERE size > 1000"
 **Interactive REPL:**
 ```bash
 lsql
-> SELECT name FROM . LIMIT 5
-> exit
+lsql> SELECT name, size FROM . WHERE extension = '.go' LIMIT 5
+lsql> schema          # list columns
+lsql> help
+lsql> exit
 ```
 
 **Output format:**
@@ -45,6 +47,15 @@ lsql
 lsql --format=csv  "SELECT name, size FROM ."
 lsql --format=json "SELECT name, size FROM ."
 lsql --format=table "SELECT name, size FROM ."   # default
+```
+
+**CLI quality-of-life** (summary on stderr, empty results without misleading headers):
+```bash
+lsql "SELECT name FROM . WHERE extension = '.xyz'"   # → (empty) · 0 rows · scanned N entries
+lsql -q "SELECT name FROM ."                         # quiet: no summary line
+lsql --headers=always "SELECT name FROM . LIMIT 0" # force CSV/table headers
+lsql --fail-on-empty "SELECT name FROM . WHERE false"  # exit code 2 if no rows
+lsql --verbose "SELECT name FROM ~ RECURSIVE LIMIT 5"  # print skip warnings live
 ```
 
 ## Virtual Table
