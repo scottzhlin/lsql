@@ -12,10 +12,22 @@ scanner_test.go         1607
 aggregator.go           1534
 ```
 
+## Requirements
+
+- **Go 1.26.3** or later (see `go.mod` `toolchain` directive)
+
+Recommended: enable the **`jsonv2` experiment** for faster, standards-aligned JSON output (`encoding/json/v2`):
+
+```bash
+export GOEXPERIMENT=jsonv2   # or: go build -tags=goexperiment.jsonv2 ...
+```
+
+Without it, the project falls back to `encoding/json` (v1).
+
 ## Install
 
 ```bash
-go install github.com/scottzhlin/lsql/cmd/lsql@latest
+GOEXPERIMENT=jsonv2 go install github.com/scottzhlin/lsql/cmd/lsql@latest
 ```
 
 Or build from source:
@@ -23,7 +35,7 @@ Or build from source:
 ```bash
 git clone https://github.com/scottzhlin/lsql.git
 cd lsql
-go build -o lsql ./cmd/lsql/
+GOEXPERIMENT=jsonv2 go build -o lsql ./cmd/lsql/
 ```
 
 ## Usage
@@ -175,7 +187,7 @@ SQL string
     ↓ Formatter  (internal/formatter) — table / CSV / JSON
 ```
 
-Standard library only — no external dependencies.
+Standard library only — no external dependencies. JSON output uses `encoding/json/v2` when built with `GOEXPERIMENT=jsonv2` (Go 1.26+).
 
 ## License
 
