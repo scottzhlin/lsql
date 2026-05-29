@@ -2,7 +2,6 @@ package formatter
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/scottzhlin/lsql/internal/evaluator"
+	"github.com/scottzhlin/lsql/internal/jsonutil"
 )
 
 type Format string
@@ -151,9 +151,7 @@ func printJSON(w io.Writer, result *evaluator.Result, humanSize bool) error {
 		}
 		out[i] = m
 	}
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(out)
+	return jsonutil.EncodeIndented(w, out)
 }
 
 func rowValues(columns []string, row evaluator.ResultRow, humanSize bool) []string {
