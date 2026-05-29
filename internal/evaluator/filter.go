@@ -2,7 +2,6 @@ package evaluator
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -11,7 +10,7 @@ import (
 )
 
 // ApplyFilter returns the subset of rows matching expr. A nil expr returns all rows.
-func ApplyFilter(rows []FileRow, expr parser.Expr) ([]FileRow, error) {
+func ApplyFilter(rows []FileRow, expr parser.Expr, stats *scanStats) ([]FileRow, error) {
 	if expr == nil {
 		return rows, nil
 	}
@@ -19,7 +18,7 @@ func ApplyFilter(rows []FileRow, expr parser.Expr) ([]FileRow, error) {
 	for _, row := range rows {
 		match, err := evalExpr(expr, row)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: filter error on %q: %v\n", row.Path, err)
+			stats.warnf("filter error on %q: %v", row.Path, err)
 			continue
 		}
 		if match {

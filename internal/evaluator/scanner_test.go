@@ -16,7 +16,7 @@ func TestScanner_Flat(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "b.txt"), "world")
 	os.MkdirAll(filepath.Join(dir, "subdir"), 0755)
 
-	rows, err := evaluator.Scan(dir, false)
+	rows, err := evaluator.Scan(dir, false, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestScanner_Recursive(t *testing.T) {
 	os.MkdirAll(sub, 0755)
 	writeFile(t, filepath.Join(sub, "child.go"), "")
 
-	rows, err := evaluator.Scan(dir, true)
+	rows, err := evaluator.Scan(dir, true, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestScanner_FileRowFields(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, "hello.go"), "package main")
 
-	rows, err := evaluator.Scan(dir, false)
+	rows, err := evaluator.Scan(dir, false, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestScanner_FileRowFields(t *testing.T) {
 }
 
 func TestScanner_InvalidPath(t *testing.T) {
-	_, err := evaluator.Scan("/nonexistent/path/xyz", false)
+	_, err := evaluator.Scan("/nonexistent/path/xyz", false, nil)
 	if err == nil {
 		t.Fatal("expected error for nonexistent path")
 	}
@@ -108,8 +108,8 @@ func TestFilter_BinaryExpr(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "small.go"), "hi")
 	writeFile(t, filepath.Join(dir, "big.go"), strings.Repeat("x", 1000))
 
-	rows, _ := evaluator.Scan(dir, false)
-	filtered, err := evaluator.ApplyFilter(rows, parser.BinaryExpr{Col: "size", Op: ">", Val: int64(100)})
+	rows, _ := evaluator.Scan(dir, false, nil)
+	filtered, err := evaluator.ApplyFilter(rows, parser.BinaryExpr{Col: "size", Op: ">", Val: int64(100)}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -123,8 +123,8 @@ func TestFilter_LikeExpr(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "main.go"), "")
 	writeFile(t, filepath.Join(dir, "main.txt"), "")
 
-	rows, _ := evaluator.Scan(dir, false)
-	filtered, err := evaluator.ApplyFilter(rows, parser.LikeExpr{Col: "name", Pattern: "%.go"})
+	rows, _ := evaluator.Scan(dir, false, nil)
+	filtered, err := evaluator.ApplyFilter(rows, parser.LikeExpr{Col: "name", Pattern: "%.go"}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -139,13 +139,13 @@ func TestFilter_LogicalAnd(t *testing.T) {
 	writeFile(t, filepath.Join(dir, "b.go"), strings.Repeat("x", 2000))
 	writeFile(t, filepath.Join(dir, "c.txt"), strings.Repeat("x", 2000))
 
-	rows, _ := evaluator.Scan(dir, false)
+	rows, _ := evaluator.Scan(dir, false, nil)
 	expr := parser.LogicalExpr{
 		Left:  parser.BinaryExpr{Col: "extension", Op: "=", Val: ".go"},
 		Op:    "AND",
 		Right: parser.BinaryExpr{Col: "size", Op: ">", Val: int64(1000)},
 	}
-	filtered, err := evaluator.ApplyFilter(rows, expr)
+	filtered, err := evaluator.ApplyFilter(rows, expr, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -157,8 +157,8 @@ func TestFilter_LogicalAnd(t *testing.T) {
 func TestFilter_NilExpr(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, "file.go"), "")
-	rows, _ := evaluator.Scan(dir, false)
-	filtered, err := evaluator.ApplyFilter(rows, nil)
+	rows, _ := evaluator.Scan(dir, false, nil)
+	filtered, err := evaluator.ApplyFilter(rows, nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

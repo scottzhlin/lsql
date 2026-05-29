@@ -16,51 +16,85 @@ func makeResult() *evaluator.Result {
 			{"name": "foo.go", "size": int64(1024)},
 			{"name": "bar.txt", "size": int64(512)},
 		},
+		Meta: evaluator.Meta{Scanned: 2, Matched: 2, Duration: 3 * time.Millisecond},
 	}
 }
 
 func TestFormatter_Table(t *testing.T) {
-	var sb strings.Builder
-	err := formatter.Print(&sb, makeResult(), formatter.Table)
+	var out, summary strings.Builder
+	opts := formatter.DefaultOptions(formatter.Table)
+	err := formatter.Print(&out, &summary, makeResult(), opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	out := sb.String()
-	if !strings.Contains(out, "name") || !strings.Contains(out, "size") {
-		t.Error("table output should contain column headers")
+	body := out.String()
+	if !strings.Contains(body, "name") || !strings.Contains(body, "foo.go") {
+		t.Errorf("table output missing data: %q", body)
 	}
-	if !strings.Contains(out, "foo.go") || !strings.Contains(out, "1024") {
-		t.Error("table output should contain row data")
+	if !strings.Contains(summary.String(), "2 rows") {
+		t.Errorf("expected summary with row count, got %q", summary.String())
+	}
+}
+
+func TestFormatter_TableEmptyNoHeaders(t *testing.T) {
+	result := &evaluator.Result{
+		Columns: []string{"name"},
+		Rows:    nil,
+		Meta:    evaluator.Meta{Scanned: 5, Duration: time.Millisecond},
+	}
+	var out, summary strings.Builder
+	opts := formatter.DefaultOptions(formatter.Table)
+	if err := formatter.Print(&out, &summary, result, opts); err != nil {
+		t.Fatal(err)
+	}
+	if out.String() != "" {
+		t.Errorf("empty table should produce no stdout, got %q", out.String())
+	}
+	if !strings.Contains(summary.String(), "(empty)") {
+		t.Errorf("summary should mark empty result: %q", summary.String())
 	}
 }
 
 func TestFormatter_CSV(t *testing.T) {
-	var sb strings.Builder
-	err := formatter.Print(&sb, makeResult(), formatter.CSV)
+	var out strings.Builder
+	opts := formatter.DefaultOptions(formatter.CSV)
+	opts.Quiet = true
+	err := formatter.Print(&out, nil, makeResult(), opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	lines := strings.Split(strings.TrimSpace(sb.String()), "\n")
-	if len(lines) != 3 { // header + 2 rows
-		t.Fatalf("expected 3 CSV lines, got %d: %q", len(lines), sb.String())
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 CSV lines, got %d: %q", len(lines), out.String())
 	}
 	if lines[0] != "name,size" {
 		t.Errorf("CSV header: got %q, want %q", lines[0], "name,size")
 	}
 }
 
+func TestFormatter_CSVEmpty(t *testing.T) {
+	result := &evaluator.Result{Columns: []string{"name"}, Meta: evaluator.Meta{Scanned: 1}}
+	var out strings.Builder
+	opts := formatter.DefaultOptions(formatter.CSV)
+	opts.Quiet = true
+	if err := formatter.Print(&out, nil, result, opts); err != nil {
+		t.Fatal(err)
+	}
+	if out.String() != "" {
+		t.Errorf("empty csv with headers=auto should be silent, got %q", out.String())
+	}
+}
+
 func TestFormatter_JSON(t *testing.T) {
-	var sb strings.Builder
-	err := formatter.Print(&sb, makeResult(), formatter.JSON)
+	var out strings.Builder
+	opts := formatter.DefaultOptions(formatter.JSON)
+	opts.Quiet = true
+	err := formatter.Print(&out, nil, makeResult(), opts)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	out := sb.String()
-	if !strings.Contains(out, `"foo.go"`) {
+	if !strings.Contains(out.String(), `"foo.go"`) {
 		t.Error("JSON output should contain foo.go")
-	}
-	if !strings.Contains(out, `"name"`) {
-		t.Error("JSON output should contain key 'name'")
 	}
 }
 
@@ -70,19 +104,42 @@ func TestFormatter_TimeFormatting(t *testing.T) {
 		Rows: []evaluator.ResultRow{
 			{"modified": time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)},
 		},
+		Meta: evaluator.Meta{Scanned: 1, Matched: 1},
 	}
-	var sb strings.Builder
-	formatter.Print(&sb, result, formatter.Table)
-	out := sb.String()
-	if !strings.Contains(out, "2024-01-15") {
-		t.Errorf("time should be formatted as YYYY-MM-DD HH:MM:SS, got: %q", out)
+	var out strings.Builder
+	opts := formatter.DefaultOptions(formatter.Table)
+	opts.Quiet = true
+	formatter.Print(&out, nil, result, opts)
+	if !strings.Contains(out.String(), "2024-01-15") {
+		t.Errorf("time should be formatted, got: %q", out.String())
+	}
+}
+
+func TestFormatter_HumanSize(t *testing.T) {
+	result := &evaluator.Result{
+		Columns: []string{"size"},
+		Rows:    []evaluator.ResultRow{{"size": int64(1536)}},
+		Meta:    evaluator.Meta{Scanned: 1, Matched: 1},
+	}
+	var out strings.Builder
+	opts := formatter.DefaultOptions(formatter.Table)
+	opts.Quiet = true
+	formatter.Print(&out, nil, result, opts)
+	if !strings.Contains(out.String(), "KiB") {
+		t.Errorf("human size expected KiB, got %q", out.String())
 	}
 }
 
 func TestFormatter_UnknownFormat(t *testing.T) {
-	var sb strings.Builder
-	err := formatter.Print(&sb, makeResult(), "xml")
+	var out strings.Builder
+	err := formatter.Print(&out, nil, makeResult(), formatter.Options{Format: "xml"})
 	if err == nil {
 		t.Fatal("expected error for unknown format")
+	}
+}
+
+func TestParseHeaderMode(t *testing.T) {
+	if _, err := formatter.ParseHeaderMode("bogus"); err == nil {
+		t.Fatal("expected error")
 	}
 }

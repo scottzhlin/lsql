@@ -9,7 +9,8 @@ import (
 )
 
 // Scan reads directory entries at path. If recursive is true, it descends into subdirectories.
-func Scan(path string, recursive bool) ([]FileRow, error) {
+// Pass nil for stats to print warnings immediately (legacy behavior for direct callers).
+func Scan(path string, recursive bool, stats *scanStats) ([]FileRow, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot access %q: %w", path, err)
@@ -18,12 +19,12 @@ func Scan(path string, recursive bool) ([]FileRow, error) {
 		return nil, fmt.Errorf("%q is not a directory", path)
 	}
 	if recursive {
-		return scanRecursive(path)
+		return scanRecursive(path, stats)
 	}
-	return scanFlat(path)
+	return scanFlat(path, stats)
 }
 
-func scanFlat(path string) ([]FileRow, error) {
+func scanFlat(path string, stats *scanStats) ([]FileRow, error) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
@@ -32,7 +33,7 @@ func scanFlat(path string) ([]FileRow, error) {
 	for _, e := range entries {
 		info, err := e.Info()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: skipping %q: %v\n", filepath.Join(path, e.Name()), err)
+			stats.warnf("skipping %q: %v", filepath.Join(path, e.Name()), err)
 			continue
 		}
 		rows = append(rows, newFileRow(filepath.Join(path, e.Name()), info, 0))
@@ -40,11 +41,11 @@ func scanFlat(path string) ([]FileRow, error) {
 	return rows, nil
 }
 
-func scanRecursive(root string) ([]FileRow, error) {
+func scanRecursive(root string, stats *scanStats) ([]FileRow, error) {
 	var rows []FileRow
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: skipping %q: %v\n", path, err)
+			stats.warnf("skipping %q: %v", path, err)
 			return nil
 		}
 		if path == root {
@@ -54,7 +55,7 @@ func scanRecursive(root string) ([]FileRow, error) {
 		depth := strings.Count(rel, string(filepath.Separator))
 		info, err := d.Info()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: skipping %q: %v\n", path, err)
+			stats.warnf("skipping %q: %v", path, err)
 			return nil
 		}
 		rows = append(rows, newFileRow(path, info, depth))
