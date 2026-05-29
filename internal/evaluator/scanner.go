@@ -32,6 +32,7 @@ func scanFlat(path string) ([]FileRow, error) {
 	for _, e := range entries {
 		info, err := e.Info()
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: skipping %q: %v\n", filepath.Join(path, e.Name()), err)
 			continue
 		}
 		rows = append(rows, newFileRow(filepath.Join(path, e.Name()), info, 0))
@@ -53,6 +54,7 @@ func scanRecursive(root string) ([]FileRow, error) {
 		depth := strings.Count(rel, string(filepath.Separator))
 		info, err := d.Info()
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: skipping %q: %v\n", path, err)
 			return nil
 		}
 		rows = append(rows, newFileRow(path, info, depth))
