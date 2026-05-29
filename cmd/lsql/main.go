@@ -14,7 +14,7 @@ import (
 	"github.com/scottzhlin/lsql/internal/parser"
 )
 
-const version = "0.2.0"
+const version = "0.3.0"
 
 func main() {
 	format := flag.String("format", "table", "output format: table, csv, json")
@@ -25,6 +25,7 @@ func main() {
 	quietShort := flag.Bool("q", false, "shorthand for --quiet")
 	verbose := flag.Bool("verbose", false, "print filesystem warnings as they occur")
 	failOnEmpty := flag.Bool("fail-on-empty", false, "exit with code 2 when a query returns zero rows")
+	jsonMeta := flag.Bool("json-meta", false, "with --format=json, wrap output in {\"meta\":...,\"data\":...}")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
 
@@ -45,11 +46,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *jsonMeta && formatter.Format(*format) != formatter.JSON {
+		fmt.Fprintln(os.Stderr, "error: --json-meta requires --format=json")
+		os.Exit(1)
+	}
+
 	opts := formatter.Options{
 		Format:    formatter.Format(*format),
 		Headers:   headerMode,
 		HumanSize: *humanSize,
 		Quiet:     *quiet,
+		JSONMeta:  *jsonMeta,
 	}
 	runOpts := evaluator.RunOptions{Verbose: *verbose}
 
@@ -129,7 +136,7 @@ Examples:
   SELECT extension, COUNT(*) FROM . RECURSIVE GROUP BY extension
 
 CLI flags (also work in one-shot mode):
-  --format=table|csv|json   --headers=auto|always|never
+  --format=table|csv|json   --json-meta (with json)   --headers=auto|always|never
   --human-size / --no-human-size   --quiet (-q)   --verbose   --fail-on-empty
 `)
 }
