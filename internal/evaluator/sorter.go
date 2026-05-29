@@ -3,7 +3,7 @@ package evaluator
 import (
 	"sort"
 
-	"github.com/scottlin/lsql/internal/parser"
+	"github.com/scottzhlin/lsql/internal/parser"
 )
 
 // SortAndLimit applies ORDER BY ordering and LIMIT truncation to result rows.

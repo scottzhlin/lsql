@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scottlin/lsql/internal/evaluator"
-	"github.com/scottlin/lsql/internal/parser"
+	"github.com/scottzhlin/lsql/internal/evaluator"
+	"github.com/scottzhlin/lsql/internal/parser"
 )
 
 func makeRows(sizes ...int64) []evaluator.FileRow {

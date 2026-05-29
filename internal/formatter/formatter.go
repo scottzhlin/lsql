@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/scottlin/lsql/internal/evaluator"
+	"github.com/scottzhlin/lsql/internal/evaluator"
 )
 
 type Format string

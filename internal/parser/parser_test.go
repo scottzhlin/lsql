@@ -3,8 +3,8 @@ package parser_test
 import (
 	"testing"
 
-	"github.com/scottlin/lsql/internal/lexer"
-	"github.com/scottlin/lsql/internal/parser"
+	"github.com/scottzhlin/lsql/internal/lexer"
+	"github.com/scottzhlin/lsql/internal/parser"
 )
 
 func parse(t *testing.T, sql string) *parser.SelectStmt {

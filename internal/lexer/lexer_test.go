@@ -3,7 +3,7 @@ package lexer_test
 import (
 	"testing"
 
-	"github.com/scottlin/lsql/internal/lexer"
+	"github.com/scottzhlin/lsql/internal/lexer"
 )
 
 func tokenTypes(tokens []lexer.Token) []lexer.TokenType {

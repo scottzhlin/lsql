@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scottlin/lsql/internal/lexer"
+	"github.com/scottzhlin/lsql/internal/lexer"
 )
 
 // Parser converts a token stream into a SelectStmt AST.

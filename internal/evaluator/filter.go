@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scottlin/lsql/internal/parser"
+	"github.com/scottzhlin/lsql/internal/parser"
 )
 
 // ApplyFilter returns the subset of rows matching expr. A nil expr returns all rows.

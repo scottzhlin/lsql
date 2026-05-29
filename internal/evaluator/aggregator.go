@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/scottlin/lsql/internal/parser"
+	"github.com/scottzhlin/lsql/internal/parser"
 )
 
 // ResultRow is one row in the query output.

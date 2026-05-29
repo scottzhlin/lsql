@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scottlin/lsql/internal/evaluator"
-	"github.com/scottlin/lsql/internal/formatter"
+	"github.com/scottzhlin/lsql/internal/evaluator"
+	"github.com/scottzhlin/lsql/internal/formatter"
 )
 
 func makeResult() *evaluator.Result {

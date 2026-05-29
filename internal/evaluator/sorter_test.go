@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/scottlin/lsql/internal/evaluator"
-	"github.com/scottlin/lsql/internal/parser"
+	"github.com/scottzhlin/lsql/internal/evaluator"
+	"github.com/scottzhlin/lsql/internal/parser"
 )
 
 func makeResultRows(sizes ...int64) []evaluator.ResultRow {

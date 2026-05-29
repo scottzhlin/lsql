@@ -7,10 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/scottlin/lsql/internal/evaluator"
-	"github.com/scottlin/lsql/internal/formatter"
-	"github.com/scottlin/lsql/internal/lexer"
-	"github.com/scottlin/lsql/internal/parser"
+	"github.com/scottzhlin/lsql/internal/evaluator"
+	"github.com/scottzhlin/lsql/internal/formatter"
+	"github.com/scottzhlin/lsql/internal/lexer"
+	"github.com/scottzhlin/lsql/internal/parser"
 )
 
 func main() {

@@ -1,7 +1,7 @@
 package evaluator
 
 import (
-	"github.com/scottlin/lsql/internal/parser"
+	"github.com/scottzhlin/lsql/internal/parser"
 )
 
 // Result is the complete output of a query.

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/scottlin/lsql/internal/evaluator"
-	"github.com/scottlin/lsql/internal/parser"
+	"github.com/scottzhlin/lsql/internal/evaluator"
+	"github.com/scottzhlin/lsql/internal/parser"
 )
 
 func TestScanner_Flat(t *testing.T) {
