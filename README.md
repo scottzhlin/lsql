@@ -1,5 +1,7 @@
 # lsql
 
+[![CI](https://github.com/scottzhlin/lsql/actions/workflows/ci.yml/badge.svg)](https://github.com/scottzhlin/lsql/actions/workflows/ci.yml)
+
 Query your filesystem with SQL. Inspired by [gitql](https://github.com/filhodanuvem/gitql).
 
 ```
@@ -68,6 +70,7 @@ lsql -q "SELECT name FROM ."                         # quiet: no summary line
 lsql --headers=always "SELECT name FROM . LIMIT 0" # force CSV/table headers
 lsql --fail-on-empty "SELECT name FROM . WHERE false"  # exit code 2 if no rows
 lsql --verbose "SELECT name FROM ~ RECURSIVE LIMIT 5"  # print skip warnings live
+lsql --format=json --json-meta "SELECT name, size FROM . LIMIT 5" | jq '.meta.row_count'
 ```
 
 ## Virtual Table

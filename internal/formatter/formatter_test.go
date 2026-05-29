@@ -143,3 +143,19 @@ func TestParseHeaderMode(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestFormatter_JSONMeta(t *testing.T) {
+	var out strings.Builder
+	opts := formatter.DefaultOptions(formatter.JSON)
+	opts.Quiet = true
+	opts.JSONMeta = true
+	if err := formatter.Print(&out, nil, makeResult(), opts); err != nil {
+		t.Fatal(err)
+	}
+	body := out.String()
+	for _, want := range []string{`"meta"`, `"data"`, `"row_count"`, `"scanned"`, `"foo.go"`} {
+		if !strings.Contains(body, want) {
+			t.Errorf("json-meta output missing %q in %q", want, body)
+		}
+	}
+}

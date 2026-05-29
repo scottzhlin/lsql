@@ -36,6 +36,8 @@ type Options struct {
 	HumanSize bool
 	// Quiet suppresses the stderr summary line.
 	Quiet bool
+	// JSONMeta wraps JSON output as {"meta":{...},"data":[...]} (format=json only).
+	JSONMeta bool
 }
 
 // DefaultOptions is the standard interactive CLI configuration.
@@ -64,14 +66,14 @@ func Print(out, summary io.Writer, result *evaluator.Result, opts Options) error
 			return err
 		}
 	case JSON:
-		if err := printJSON(out, result, opts.HumanSize); err != nil {
+		if err := printJSON(out, result, opts.HumanSize, opts.JSONMeta); err != nil {
 			return err
 		}
 	default:
 		return fmt.Errorf("unknown format %q (valid: table, csv, json)", opts.Format)
 	}
 
-	if !opts.Quiet && summary != nil {
+	if !opts.Quiet && !opts.JSONMeta && summary != nil {
 		fmt.Fprintln(summary, FormatSummary(result))
 	}
 	return nil
@@ -142,7 +144,47 @@ func printCSV(w io.Writer, result *evaluator.Result, showHeaders, humanSize bool
 	return cw.Error()
 }
 
-func printJSON(w io.Writer, result *evaluator.Result, humanSize bool) error {
+type jsonEnvelope struct {
+	Meta jsonMetaOutput           `json:"meta"`
+	Data []map[string]interface{} `json:"data"`
+}
+
+type jsonMetaOutput struct {
+	Columns    []string `json:"columns"`
+	RowCount   int      `json:"row_count"`
+	Scanned    int      `json:"scanned"`
+	Matched    int      `json:"matched"`
+	DurationMs int64    `json:"duration_ms"`
+	Warnings   int      `json:"warnings"`
+	From       string   `json:"from"`
+	Recursive  bool     `json:"recursive"`
+}
+
+func printJSON(w io.Writer, result *evaluator.Result, humanSize, withMeta bool) error {
+	data := rowsToJSONMaps(result, humanSize)
+	if !withMeta {
+		return jsonutil.EncodeIndented(w, data)
+	}
+	return jsonutil.EncodeIndented(w, jsonEnvelope{
+		Meta: jsonMetaFromResult(result),
+		Data: data,
+	})
+}
+
+func jsonMetaFromResult(result *evaluator.Result) jsonMetaOutput {
+	return jsonMetaOutput{
+		Columns:    append([]string(nil), result.Columns...),
+		RowCount:   len(result.Rows),
+		Scanned:    result.Meta.Scanned,
+		Matched:    result.Meta.Matched,
+		DurationMs: result.Meta.Duration.Milliseconds(),
+		Warnings:   result.Meta.Warnings,
+		From:       result.Meta.From,
+		Recursive:  result.Meta.Recursive,
+	}
+}
+
+func rowsToJSONMaps(result *evaluator.Result, humanSize bool) []map[string]interface{} {
 	out := make([]map[string]interface{}, len(result.Rows))
 	for i, row := range result.Rows {
 		m := make(map[string]interface{}, len(result.Columns))
@@ -151,7 +193,7 @@ func printJSON(w io.Writer, result *evaluator.Result, humanSize bool) error {
 		}
 		out[i] = m
 	}
-	return jsonutil.EncodeIndented(w, out)
+	return out
 }
 
 func rowValues(columns []string, row evaluator.ResultRow, humanSize bool) []string {
